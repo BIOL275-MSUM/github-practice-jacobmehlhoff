@@ -1,0 +1,121 @@
+---
+title: "Practicegithub"
+author: "Jacob Mehlhoff"
+date: "March 13, 2019"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+First the libraries must be loaded.
+
+```{r, include = FALSE}
+library(readxl) 
+library(tidyverse) 
+```
+
+The finches data must be read
+
+```{r}
+finches <- read_excel("finches_data.xlsx")
+```
+
+Look at the data.
+
+```{r}
+glimpse(finches)
+```
+
+Create a histogram of beak length grouped by survival.
+
+```{r}
+ggplot(
+  data = finches,                     
+  mapping = aes(x = beak_length,      
+                fill = outcome)       
+) +
+  geom_histogram(bins = 14) +        
+  facet_wrap(~ outcome, ncol = 1) +  
+  guides(fill = FALSE) +              
+  labs(
+    title = "Figure 1.",             
+    x = "Beak Length (mm)",           
+    y = "Number of Birds"             
+  )
+```
+
+Summarize the data set by outcome.
+
+```{r}
+beak_length_grouped_summary <- 
+  finches %>% 
+  group_by(outcome) %>% 
+  summarize(mean = mean(beak_length),
+            sd = sd(beak_length),
+            n = n()) %>% 
+  mutate(sem = sd / sqrt(n),
+         upper = mean + 1.96 * sem,
+         lower = mean - 1.96 * sem)
+```
+
+Create a bar chart.
+
+```{r}
+ggplot(
+  data = beak_length_grouped_summary,   # dont use the original finches dataset
+  mapping = aes(x = outcome,            # survival on the x axis
+                y = mean,               # mean beak length on the y axis
+                fill = outcome)         # make died/survived different colors
+) +
+  geom_col() +                          # add columns
+  geom_errorbar(                        # add error bars
+    mapping = aes(ymin = lower,         #   lower 95% confidence limit
+                  ymax = upper),        #   upper 95% confidence limit
+    width = .3                          #   width of horizontal part of bars
+  ) +
+  guides(fill = FALSE) +                # don't show a legend for fll color
+  labs(
+    title = "Figure 2.",                # title
+    x = "Survival Outcome",             # x-axis label
+    y = "Beak Length (mm)"              # y-axis label
+  )
+```
+
+Get a vector of beak lengths for birds that died.
+
+```{r}
+beak_length_died <-
+  finches %>%                     # start with finches dataset
+  filter(outcome == "died") %>%   # only include rows w/ outcome=died
+  pull(beak_length)               # extract the beak_length column
+
+```
+
+Print the new object in the console... it is a vector
+```{r}
+beak_length_died
+```
+
+Get a vector of beak lengths for birds that survived.
+
+```{r}
+beak_length_survived <-
+  finches %>% 
+  filter(outcome == "survived") %>% 
+  pull(beak_length)
+```
+
+Print the results in the console.
+
+```{r}
+beak_length_survived
+```
+
+Perform a two-sample t-test assuming unequal variances.
+
+```{r}
+t.test(beak_length_died, beak_length_survived)
+```
+
